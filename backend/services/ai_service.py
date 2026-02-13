@@ -9,7 +9,7 @@ class AIService:
     def __init__(self):
         """初始化 AI 服务"""
         self.api_key = os.getenv("AI_API_KEY")
-        self.model = os.getenv("AI_MODEL", "gpt-3.5-turbo")
+        self.model = os.getenv("AI_MODEL", "deepseek-chat")
         # DeepSeek API 基础 URL
         self.api_base = os.getenv("AI_API_BASE", "https://api.deepseek.com/v1")
         # 会话存储：使用字典存储会话，键为会话ID，值为包含messages和user_id的字典
