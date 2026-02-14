@@ -1,5 +1,5 @@
 # 阶段 1: 构建前端应用
-FROM node:16-alpine AS build
+FROM node:18-alpine AS build
 
 # 设置工作目录
 WORKDIR /app/frontend
