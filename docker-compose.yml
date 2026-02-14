@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=mysql+pymysql://admin:password@db:3306/ai_financial_news
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=admin
+      - DB_PASSWORD=password
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # 数据库服务
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=ai_financial_news
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/db_init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge
