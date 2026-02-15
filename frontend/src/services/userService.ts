@@ -167,7 +167,7 @@ export async function login(credentials: LoginRequest): Promise<ApiResponse<User
  */
 export async function addFavorite(userId: number, newsId: number): Promise<ApiResponse<MessageResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/favorites`, {
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -222,7 +222,7 @@ export async function removeFavorite(userId: number, newsId: number): Promise<Ap
  */
 export async function getFavorites(userId: number, page: number = 1, pageSize: number = 20): Promise<ApiResponse<PaginatedResponse<FavoriteItem>>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/favorites?page=${page}&page_size=${pageSize}`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites?page=${page}&page_size=${pageSize}`);
     
     return await response.json();
   } catch (error) {
@@ -245,7 +245,7 @@ export async function getFavorites(userId: number, page: number = 1, pageSize: n
  */
 export async function checkFavorite(userId: number, newsId: number): Promise<ApiResponse<CheckFavoriteResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/favorites/${newsId}/check`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites/${newsId}/check`);
     
     return await response.json();
   } catch (error) {
@@ -320,7 +320,7 @@ export async function getHistory(userId: number, page: number = 1, pageSize: num
  */
 export async function getUserSessions(userId: number): Promise<ApiResponse<SessionsResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/sessions`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/sessions`);
     
     return await response.json();
   } catch (error) {

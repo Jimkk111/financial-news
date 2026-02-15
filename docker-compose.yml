@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   # 后端服务
@@ -33,6 +33,7 @@ services:
   # 数据库服务
   db:
     image: mysql:8.0
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     environment:

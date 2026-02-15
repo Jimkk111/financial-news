@@ -122,7 +122,7 @@ export async function getNewsDetail(newsId: number): Promise<NewsDetail> {
 
 // 增加新闻浏览量
 export async function incrementNewsViews(newsId: number): Promise<{ id: number; views: number }> {
-  const response = await fetch(`http://118.195.165.73:8000/api/news/${newsId}/view`, {
+  const response = await fetch(`${API_BASE_URL}/api/news/${newsId}/view`, {
     method: 'POST'
   });
   
@@ -136,7 +136,7 @@ export async function incrementNewsViews(newsId: number): Promise<{ id: number; 
 
 // 获取新闻分类列表
 export async function getNewsCategories(): Promise<Category[]> {
-  const response = await fetch(`http://118.195.165.73:8000/api/news/categories`);
+  const response = await fetch(`${API_BASE_URL}/api/news/categories`);
   
   if (!response.ok) {
     throw new Error('Failed to fetch news categories');
@@ -171,7 +171,7 @@ export async function searchNews(
   });
   
   try {
-    const response = await fetch(`http://118.195.165.73:8000/api/news/search?${params.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/api/news/search?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error('Failed to search news');
@@ -222,7 +222,7 @@ export async function getNewsByTag(
     page_size: pageSize.toString()
   });
   
-  const response = await fetch(`http://118.195.165.73:8000/api/news/tag/${tagId}?${params.toString()}`);
+  const response = await fetch(`${API_BASE_URL}/api/news/tag/${tagId}?${params.toString()}`);
   
   if (!response.ok) {
     throw new Error('Failed to fetch news by tag');
