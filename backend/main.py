@@ -1,16 +1,43 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 import os
+import redis
+import random
+from datetime import timedelta
 from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from services.ai_service import AIService
 from services.news_service import NewsService
 from services.user_service import UserService
 from spiders.database_news import get_db, News, NewsCategory, NewsTag
+from extensions import bcrypt, jwt, mail
+from flask_mail import Message
 
 # 加载环境变量
 load_dotenv()
 
 # 创建 Flask 应用
 app = Flask(__name__)
+
+# 配置 JWT
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-key')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
+
+# 配置 Flask-Mail
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.163.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 465))
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'true').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
+# 初始化扩展
+bcrypt.init_app(app)
+jwt.init_app(app)
+mail.init_app(app)
+
+# 初始化 Redis
+redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+redis_client = redis.from_url(redis_url)
 
 # 初始化 AI 服务
 ai_service = AIService()
@@ -334,10 +361,45 @@ def increment_news_views(news_id):
         if 'db' in locals():
             db.close()
 
-# ==================== 用户接口 ====================
+# ==================== 用户认证接口 ====================
+
+# 发送验证码接口
+@app.route('/api/auth/send-code', methods=['POST'])
+def send_code():
+    data = request.json
+    email = data.get('email')
+    
+    if not email:
+        return error_response("INVALID_PARAMETER", "Email is required")
+    
+    # 生成6位随机验证码
+    code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    # 存入 Redis，有效期 5 分钟 (300秒)
+    try:
+        redis_client.setex(f"verify_code:{email}", 300, code)
+        
+        # 发送邮件
+        try:
+            msg = Message(
+                subject="AI金融快讯 - 注册验证码",
+                recipients=[email],
+                body=f"您的验证码是：{code}，有效期5分钟。请勿泄露给他人。"
+            )
+            mail.send(msg)
+            print(f"Verification code sent to {email}: {code}", flush=True)
+        except Exception as e:
+            print(f"Failed to send email: {str(e)}", flush=True)
+            # 即使邮件发送失败，也返回成功（仅用于测试，生产环境应返回错误）
+            # 或者在这里直接返回错误，取决于业务需求
+            return error_response("EMAIL_SEND_ERROR", "Failed to send verification code")
+        
+        return success_response({"message": "Verification code sent successfully"})
+    except Exception as e:
+        return error_response("REDIS_ERROR", str(e))
 
 # 用户注册接口
-@app.route('/api/user/register', methods=['POST'])
+@app.route('/api/auth/register', methods=['POST'])
 def register_user():
     try:
         db = next(get_db())
@@ -347,14 +409,26 @@ def register_user():
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
+        code = data.get('code')
         avatar = data.get('avatar')
         
-        if not username or not email or not password:
-            return error_response("INVALID_PARAMETER", "Username, email and password are required")
+        if not username or not email or not password or not code:
+            return error_response("INVALID_PARAMETER", "Username, email, password and code are required")
+        
+        # 验证验证码
+        stored_code = redis_client.get(f"verify_code:{email}")
+        if not stored_code:
+            return error_response("CODE_EXPIRED", "Verification code expired or not found")
+        
+        if stored_code.decode('utf-8') != code:
+            return error_response("INVALID_CODE", "Invalid verification code")
         
         result = user_service.register_user(username, email, password, avatar)
         if not result:
             return error_response("USER_EXISTS", "Username or email already exists")
+        
+        # 注册成功后删除验证码
+        redis_client.delete(f"verify_code:{email}")
         
         return success_response(result)
     except Exception as e:
@@ -364,7 +438,7 @@ def register_user():
             db.close()
 
 # 用户登录接口
-@app.route('/api/user/login', methods=['POST'])
+@app.route('/api/auth/login', methods=['POST'])
 def login_user():
     try:
         db = next(get_db())
@@ -377,11 +451,17 @@ def login_user():
         if not username or not password:
             return error_response("INVALID_PARAMETER", "Username and password are required")
         
-        result = user_service.authenticate_user(username, password)
-        if not result:
+        user = user_service.authenticate_user(username, password)
+        if not user:
             return error_response("INVALID_CREDENTIALS", "Invalid username or password")
         
-        return success_response(result)
+        # 生成 Access Token
+        access_token = create_access_token(identity=user['id'])
+        
+        return success_response({
+            "access_token": access_token,
+            "user": user
+        })
     except Exception as e:
         return error_response("DATABASE_ERROR", str(e))
     finally:

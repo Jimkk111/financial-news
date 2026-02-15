@@ -1,5 +1,5 @@
 // 用户服务，处理用户认证、收藏和浏览历史相关的API调用
-import { API_BASE_URL } from '../config/api';
+import api from "../config/api";
 
 // 定义响应类型
 export interface ApiResponse<T> {
@@ -25,6 +25,7 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  code: string;
   avatar?: string;
 }
 
@@ -32,6 +33,17 @@ export interface RegisterRequest {
 export interface LoginRequest {
   username: string;
   password: string;
+}
+
+// 登录响应
+export interface LoginResponse {
+  access_token: string;
+  user: UserInfo;
+}
+
+// 发送验证码请求
+export interface SendCodeRequest {
+  email: string;
 }
 
 // 收藏/历史操作响应
@@ -101,31 +113,53 @@ export interface CreateSessionResponse {
   session_id: string;
 }
 
-
+/**
+ * 发送验证码
+ * @param email 邮箱
+ * @returns API响应
+ */
+export async function sendCode(
+  email: string,
+): Promise<ApiResponse<MessageResponse>> {
+  try {
+    const response = await api.post<ApiResponse<MessageResponse>>(
+      "/api/auth/send-code",
+      { email },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("发送验证码失败:", error);
+    return {
+      success: false,
+      error: {
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
+      },
+    };
+  }
+}
 
 /**
  * 用户注册
  * @param userData 用户注册数据
  * @returns API响应
  */
-export async function register(userData: RegisterRequest): Promise<ApiResponse<UserInfo>> {
+export async function register(
+  userData: RegisterRequest,
+): Promise<ApiResponse<UserInfo>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('注册失败:', error);
+    const response = await api.post<ApiResponse<UserInfo>>(
+      "/api/auth/register",
+      userData,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("注册失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -136,24 +170,22 @@ export async function register(userData: RegisterRequest): Promise<ApiResponse<U
  * @param credentials 登录凭证
  * @returns API响应
  */
-export async function login(credentials: LoginRequest): Promise<ApiResponse<UserInfo>> {
+export async function login(
+  credentials: LoginRequest,
+): Promise<ApiResponse<LoginResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('登录失败:', error);
+    const response = await api.post<ApiResponse<LoginResponse>>(
+      "/api/auth/login",
+      credentials,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("登录失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -165,24 +197,23 @@ export async function login(credentials: LoginRequest): Promise<ApiResponse<User
  * @param newsId 新闻ID
  * @returns API响应
  */
-export async function addFavorite(userId: number, newsId: number): Promise<ApiResponse<MessageResponse>> {
+export async function addFavorite(
+  userId: number,
+  newsId: number,
+): Promise<ApiResponse<MessageResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ news_id: newsId }),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('添加收藏失败:', error);
+    const response = await api.post<ApiResponse<MessageResponse>>(
+      `/api/user/${userId}/favorites`,
+      { news_id: newsId },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("添加收藏失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -194,20 +225,22 @@ export async function addFavorite(userId: number, newsId: number): Promise<ApiRe
  * @param newsId 新闻ID
  * @returns API响应
  */
-export async function removeFavorite(userId: number, newsId: number): Promise<ApiResponse<MessageResponse>> {
+export async function removeFavorite(
+  userId: number,
+  newsId: number,
+): Promise<ApiResponse<MessageResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites/${newsId}`, {
-      method: 'DELETE',
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('取消收藏失败:', error);
+    const response = await api.delete<ApiResponse<MessageResponse>>(
+      `/api/user/${userId}/favorites/${newsId}`,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("取消收藏失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -220,18 +253,25 @@ export async function removeFavorite(userId: number, newsId: number): Promise<Ap
  * @param pageSize 每页数量
  * @returns API响应
  */
-export async function getFavorites(userId: number, page: number = 1, pageSize: number = 20): Promise<ApiResponse<PaginatedResponse<FavoriteItem>>> {
+export async function getFavorites(
+  userId: number,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<ApiResponse<PaginatedResponse<FavoriteItem>>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites?page=${page}&page_size=${pageSize}`);
-    
-    return await response.json();
-  } catch (error) {
-    console.error('获取收藏列表失败:', error);
+    const response = await api.get<
+      ApiResponse<PaginatedResponse<FavoriteItem>>
+    >(`/api/user/${userId}/favorites`, {
+      params: { page, page_size: pageSize },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("获取收藏列表失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -243,18 +283,22 @@ export async function getFavorites(userId: number, page: number = 1, pageSize: n
  * @param newsId 新闻ID
  * @returns API响应
  */
-export async function checkFavorite(userId: number, newsId: number): Promise<ApiResponse<CheckFavoriteResponse>> {
+export async function checkFavorite(
+  userId: number,
+  newsId: number,
+): Promise<ApiResponse<CheckFavoriteResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/favorites/${newsId}/check`);
-    
-    return await response.json();
-  } catch (error) {
-    console.error('检查收藏状态失败:', error);
+    const response = await api.get<ApiResponse<CheckFavoriteResponse>>(
+      `/api/user/${userId}/favorites/${newsId}/check`,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("检查收藏状态失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -266,24 +310,23 @@ export async function checkFavorite(userId: number, newsId: number): Promise<Api
  * @param newsId 新闻ID
  * @returns API响应
  */
-export async function addHistory(userId: number, newsId: number): Promise<ApiResponse<MessageResponse>> {
+export async function addHistory(
+  userId: number,
+  newsId: number,
+): Promise<ApiResponse<MessageResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/history`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ news_id: newsId }),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('添加浏览历史失败:', error);
+    const response = await api.post<ApiResponse<MessageResponse>>(
+      `/api/user/${userId}/history`,
+      { news_id: newsId },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("添加浏览历史失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -296,18 +339,26 @@ export async function addHistory(userId: number, newsId: number): Promise<ApiRes
  * @param pageSize 每页数量
  * @returns API响应
  */
-export async function getHistory(userId: number, page: number = 1, pageSize: number = 20): Promise<ApiResponse<PaginatedResponse<HistoryItem>>> {
+export async function getHistory(
+  userId: number,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<ApiResponse<PaginatedResponse<HistoryItem>>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/history?page=${page}&page_size=${pageSize}`);
-    
-    return await response.json();
-  } catch (error) {
-    console.error('获取浏览历史失败:', error);
+    const response = await api.get<ApiResponse<PaginatedResponse<HistoryItem>>>(
+      `/api/user/${userId}/history`,
+      {
+        params: { page, page_size: pageSize },
+      },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("获取浏览历史失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -318,18 +369,21 @@ export async function getHistory(userId: number, page: number = 1, pageSize: num
  * @param userId 用户ID
  * @returns API响应
  */
-export async function getUserSessions(userId: number): Promise<ApiResponse<SessionsResponse>> {
+export async function getUserSessions(
+  userId: number,
+): Promise<ApiResponse<SessionsResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/sessions`);
-    
-    return await response.json();
-  } catch (error) {
-    console.error('获取用户会话列表失败:', error);
+    const response = await api.get<ApiResponse<SessionsResponse>>(
+      `/api/user/${userId}/sessions`,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("获取用户会话列表失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }
@@ -341,24 +395,23 @@ export async function getUserSessions(userId: number): Promise<ApiResponse<Sessi
  * @param sessionData 会话数据
  * @returns API响应
  */
-export async function createUserSession(userId: number, sessionData: CreateSessionRequest): Promise<ApiResponse<CreateSessionResponse>> {
+export async function createUserSession(
+  userId: number,
+  sessionData: CreateSessionRequest,
+): Promise<ApiResponse<CreateSessionResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/session/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sessionData),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('创建用户会话失败:', error);
+    const response = await api.post<ApiResponse<CreateSessionResponse>>(
+      `/api/user/${userId}/session/create`,
+      sessionData,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("创建用户会话失败:", error);
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: '网络错误，请稍后重试',
+        code: error.response?.data?.error?.code || "NETWORK_ERROR",
+        message: error.response?.data?.error?.message || "网络错误，请稍后重试",
       },
     };
   }

@@ -1,74 +1,87 @@
-import { useState } from 'react';
-import { Eye, EyeOff, Sparkles, ArrowLeft } from 'lucide-react';
-import { Header } from './Header';
-import { BottomNav } from './BottomNav';
-import { login, type LoginRequest, type UserInfo } from '@/services/userService';
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { login, type LoginRequest } from "@/services/userService";
+import { useAuth } from "@/context/AuthContext";
 
 interface LoginProps {
-  onLogin: (username: string, email?: string, userId?: string, userInfo?: any) => void;
+  onLogin: (
+    username: string,
+    email?: string,
+    userId?: string,
+    userInfo?: any,
+  ) => void;
   onSwitchToRegister: () => void;
   onTabChange: (tab: string) => void;
   onUserClick: () => void;
 }
 
-export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }: LoginProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+export function Login({
+  onLogin,
+  onSwitchToRegister,
+  onTabChange,
+  onUserClick,
+}: LoginProps) {
+  const { login: authLogin } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!username.trim()) {
-      setError('请输入用户名或邮箱');
+      setError("请输入用户名或邮箱");
       return;
     }
 
     if (!password) {
-      setError('请输入密码');
+      setError("请输入密码");
       return;
     }
 
     if (password.length < 6) {
-      setError('密码长度至少为6位');
+      setError("密码长度至少为6位");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       // 调用登录API
       const loginRequest: LoginRequest = {
         username: username.trim(),
-        password
+        password,
       };
-      
+
       const response = await login(loginRequest);
 
       if (response.success && response.data) {
         // 登录成功
-        console.log('Login API response:', response);
-        const userData = response.data;
-        // 检查输入是否是邮箱格式，如果是，则同时作为email传递
-        const isEmail = /^[^@]+@[^@]+\.[^@]+$/.test(username.trim());
-        console.log('Extracted user data:', userData);
+        console.log("Login API response:", response);
+
+        // 更新全局 AuthContext
+        authLogin(response.data.access_token, response.data.user);
+
+        const userData = response.data.user;
+        console.log("Extracted user data:", userData);
+
         onLogin(
           userData.username,
           userData.email,
           userData.id.toString(),
-          rememberMe ? userData : undefined
+          rememberMe ? userData : undefined,
         );
       } else {
         // 登录失败
-        setError(response.error?.message || '登录失败，请检查用户名和密码');
+        setError(response.error?.message || "登录失败，请检查用户名和密码");
       }
     } catch (err) {
-      console.error('登录错误:', err);
-      setError('登录失败，请稍后重试');
+      console.error("登录错误:", err);
+      setError("登录失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -76,7 +89,7 @@ export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }:
 
   const handleBack = () => {
     // 返回首页
-    onTabChange('home');
+    onTabChange("home");
   };
 
   return (
@@ -88,14 +101,24 @@ export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }:
             onClick={handleBack}
             className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5"/>
-              <path d="m12 19-7-7 7-7"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
             </svg>
           </button>
-          
+
           <h1 className="text-lg font-semibold text-gray-900">登录</h1>
-          
+
           <div className="w-8"></div>
         </div>
       </header>
@@ -133,7 +156,7 @@ export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }:
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="请输入密码"
@@ -181,7 +204,7 @@ export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }:
                 disabled={loading}
                 className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? '登录中...' : '登录'}
+                {loading ? "登录中..." : "登录"}
               </button>
             </form>
           </div>
@@ -200,7 +223,16 @@ export function Login({ onLogin, onSwitchToRegister, onTabChange, onUserClick }:
 
           {/* Footer */}
           <div className="text-center mt-8 text-gray-400 text-xs">
-            <p>登录即表示同意 <a href="#" className="text-blue-600">用户协议</a> 和 <a href="#" className="text-blue-600">隐私政策</a></p>
+            <p>
+              登录即表示同意{" "}
+              <a href="#" className="text-blue-600">
+                用户协议
+              </a>{" "}
+              和{" "}
+              <a href="#" className="text-blue-600">
+                隐私政策
+              </a>
+            </p>
           </div>
         </div>
       </main>

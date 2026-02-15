@@ -4,6 +4,7 @@ from spiders.database_news import User, UserNewsFavorites, UserNewsHistory, News
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import hashlib
+from extensions import bcrypt
 
 class UserService:
     def __init__(self, db: Session):
@@ -30,8 +31,8 @@ class UserService:
         if existing_user:
             return None
         
-        # 密码哈希（简单实现，生产环境应使用bcrypt等更安全的哈希算法）
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        # 密码哈希
+        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         
         # 创建用户
         user = User(
@@ -73,8 +74,7 @@ class UserService:
             return None
         
         # 验证密码
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
-        if user.password_hash != password_hash:
+        if not bcrypt.check_password_hash(user.password_hash, password):
             return None
         
         return {
