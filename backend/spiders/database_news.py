@@ -154,8 +154,8 @@ class Session(Base):
     __tablename__ = "sessions"
     
     id = Column(String(36), primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    title = Column(String(200), default="新会话")
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
+    title = Column(String(255), default="新会话")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
