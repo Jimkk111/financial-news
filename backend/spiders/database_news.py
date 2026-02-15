@@ -14,7 +14,7 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "3306")
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-DB_NAME = "ai financial news" # 部署前改为ai_financial_news
+DB_NAME = "ai_financial_news" # 部署前改为ai_financial_news
 
 import time
 
