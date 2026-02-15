@@ -16,30 +16,45 @@ DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 DB_NAME = "ai financial news" # 部署前改为ai_financial_news
 
+import time
+
 # 先连接到MySQL服务器（不指定数据库）
 def create_database_if_not_exists():
-    try:
-        # 连接到MySQL服务器
-        connection = pymysql.connect(
-            host=DB_HOST,
-            port=int(DB_PORT),
-            user=DB_USER,
-            password=DB_PASSWORD,
-            charset='utf8mb4'
-        )
-        
-        # 创建游标
-        cursor = connection.cursor()
-        
-        # 检查数据库是否存在
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
-        
-        # 提交并关闭
-        connection.commit()
-        cursor.close()
-        connection.close()
-    except Exception as e:
-        raise
+    max_retries = 30
+    retry_interval = 2
+    
+    for i in range(max_retries):
+        try:
+            # 连接到MySQL服务器
+            connection = pymysql.connect(
+                host=DB_HOST,
+                port=int(DB_PORT),
+                user=DB_USER,
+                password=DB_PASSWORD,
+                charset='utf8mb4'
+            )
+            
+            # 创建游标
+            cursor = connection.cursor()
+            
+            # 检查数据库是否存在
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+            
+            # 提交并关闭
+            connection.commit()
+            cursor.close()
+            connection.close()
+            print(f"Successfully connected to database and ensured '{DB_NAME}' exists.")
+            return
+        except pymysql.err.OperationalError as e:
+            if i < max_retries - 1:
+                print(f"Database connection failed (attempt {i+1}/{max_retries}). Retrying in {retry_interval} seconds...")
+                time.sleep(retry_interval)
+            else:
+                print(f"Failed to connect to database after {max_retries} attempts.")
+                raise
+        except Exception as e:
+            raise
 
 # 创建数据库（如果不存在）
 create_database_if_not_exists()
