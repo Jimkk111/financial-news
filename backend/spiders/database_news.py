@@ -6,20 +6,20 @@ import os
 import pymysql
 from dotenv import load_dotenv
 
-# åŠ è½½ç¯å¢ƒå˜é‡
+# ¼ÓÔØ»·¾³±äÁ¿
 load_dotenv()
 
-# è·å–æ•°æ®åº“é…ç½®
+# »ñÈ¡Êı¾İ¿âÅäÖÃ
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "3306")
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-DB_NAME = "ai financial news" # éƒ¨ç½²å‰æ”¹ä¸ºai_financial_news
+DB_NAME = os.getenv("DB_NAME", "ai_financial_news")
 
-# å…ˆè¿æ¥åˆ°MySQLæœåŠ¡å™¨ï¼ˆä¸æŒ‡å®šæ•°æ®åº“ï¼‰
+# ÏÈÁ¬½Óµ½MySQL·şÎñÆ÷£¨²»Ö¸¶¨Êı¾İ¿â£©
 def create_database_if_not_exists():
     try:
-        # è¿æ¥åˆ°MySQLæœåŠ¡å™¨
+        # Á¬½Óµ½MySQL·şÎñÆ÷
         connection = pymysql.connect(
             host=DB_HOST,
             port=int(DB_PORT),
@@ -28,35 +28,35 @@ def create_database_if_not_exists():
             charset='utf8mb4'
         )
         
-        # åˆ›å»ºæ¸¸æ ‡
+        # ´´½¨ÓÎ±ê
         cursor = connection.cursor()
         
-        # æ£€æŸ¥æ•°æ®åº“æ˜¯å¦å­˜åœ¨
+        # ¼ì²éÊı¾İ¿âÊÇ·ñ´æÔÚ
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
         
-        # æäº¤å¹¶å…³é—­
+        # Ìá½»²¢¹Ø±Õ
         connection.commit()
         cursor.close()
         connection.close()
     except Exception as e:
         raise
 
-# åˆ›å»ºæ•°æ®åº“ï¼ˆå¦‚æœä¸å­˜åœ¨ï¼‰
+# ´´½¨Êı¾İ¿â£¨Èç¹û²»´æÔÚ£©
 create_database_if_not_exists()
 
-# åˆ›å»ºæ•°æ®åº“è¿æ¥å­—ç¬¦ä¸²
+# ´´½¨Êı¾İ¿âÁ¬½Ó×Ö·û´®
 DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# åˆ›å»ºæ•°æ®åº“å¼•æ“
+# ´´½¨Êı¾İ¿âÒıÇæ
 engine = create_engine(DATABASE_URL)
 
-# åˆ›å»ºä¼šè¯å·¥å‚
+# ´´½¨»á»°¹¤³§
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# åˆ›å»ºåŸºç±»
+# ´´½¨»ùÀà
 Base = declarative_base()
 
-# æ–°é—»è¡¨
+# ĞÂÎÅ±í
 class News(Base):
     __tablename__ = "news"
     
@@ -76,7 +76,7 @@ class News(Base):
     categories = relationship("NewsCategory", secondary="news_category_relation", back_populates="news_list")
     tags = relationship("NewsTag", secondary="news_tag_relation", back_populates="news_list")
 
-# æ–°é—»åˆ†ç±»è¡¨
+# ĞÂÎÅ·ÖÀà±í
 class NewsCategory(Base):
     __tablename__ = "news_categories"
     
@@ -86,7 +86,7 @@ class NewsCategory(Base):
     
     news_list = relationship("News", secondary="news_category_relation", back_populates="categories")
 
-# æ–°é—»æ ‡ç­¾è¡¨
+# ĞÂÎÅ±êÇ©±í
 class NewsTag(Base):
     __tablename__ = "news_tags"
     
@@ -96,21 +96,21 @@ class NewsTag(Base):
     
     news_list = relationship("News", secondary="news_tag_relation", back_populates="tags")
 
-# æ–°é—»åˆ†ç±»å…³ç³»è¡¨
+# ĞÂÎÅ·ÖÀà¹ØÏµ±í
 class NewsCategoryRelation(Base):
     __tablename__ = "news_category_relation"
     
     news_id = Column(Integer, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True)
     category_id = Column(Integer, ForeignKey("news_categories.id", ondelete="CASCADE"), primary_key=True)
 
-# æ–°é—»æ ‡ç­¾å…³ç³»è¡¨
+# ĞÂÎÅ±êÇ©¹ØÏµ±í
 class NewsTagRelation(Base):
     __tablename__ = "news_tag_relation"
     
     news_id = Column(Integer, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True)
     tag_id = Column(Integer, ForeignKey("news_tags.id", ondelete="CASCADE"), primary_key=True)
 
-# ç”¨æˆ·è¡¨
+# ÓÃ»§±í
 class User(Base):
     __tablename__ = "users"
     
@@ -126,7 +126,7 @@ class User(Base):
     favorites = relationship("UserNewsFavorites", back_populates="user", cascade="all, delete-orphan")
     history = relationship("UserNewsHistory", back_populates="user", cascade="all, delete-orphan")
 
-# æ–°é—»æ”¶è—è¡¨
+# ĞÂÎÅÊÕ²Ø±í
 class UserNewsFavorites(Base):
     __tablename__ = "user_news_favorites"
     
@@ -137,7 +137,7 @@ class UserNewsFavorites(Base):
     user = relationship("User", back_populates="favorites")
     news = relationship("News")
 
-# æ–°é—»æµè§ˆå†å²è¡¨
+# ĞÂÎÅä¯ÀÀÀúÊ·±í
 class UserNewsHistory(Base):
     __tablename__ = "user_news_history"
     
@@ -149,20 +149,20 @@ class UserNewsHistory(Base):
     user = relationship("User", back_populates="history")
     news = relationship("News")
 
-# ä¼šè¯è¡¨
+# »á»°±í
 class Session(Base):
     __tablename__ = "sessions"
     
     id = Column(String(36), primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    title = Column(String(200), default="æ–°ä¼šè¯")
+    title = Column(String(200), default="ĞÂ»á»°")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     messages = relationship("Message", back_populates="session", cascade="all, delete-orphan", order_by="Message.created_at")
     user = relationship("User", back_populates="sessions")
 
-# æ¶ˆæ¯è¡¨
+# ÏûÏ¢±í
 class Message(Base):
     __tablename__ = "messages"
     
@@ -174,11 +174,11 @@ class Message(Base):
     
     session = relationship("Session", back_populates="messages")
 
-# æ•°æ®åº“åˆå§‹åŒ–å‡½æ•°
+# Êı¾İ¿â³õÊ¼»¯º¯Êı
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-# è·å–æ•°æ®åº“ä¼šè¯
+# »ñÈ¡Êı¾İ¿â»á»°
 def get_db():
     db = SessionLocal()
     try:
